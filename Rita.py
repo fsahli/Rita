@@ -4,17 +4,19 @@
 from Tkinter import *
 
 
-import time
+import time, os
 import RPi.GPIO as GPIO
 
 green_pin = 17
 white_pin = 23
 red_pin = 25
+off_pin = 24
  
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(green_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(white_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(red_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(off_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 ASCII_i=65
 ASCII_f=90
@@ -22,6 +24,9 @@ gap = 150
 current_char = ASCII_i
 words=""
 
+red_state = GPIO.HIGH
+white_state = GPIO.HIGH
+green_state = GPIO.HIGH
 def char_dif(char_n,increment):
 	new_char=char_n+increment
 	if new_char>ASCII_f:
@@ -34,47 +39,69 @@ def char_dif(char_n,increment):
 def check_button():
 	global current_char
 	global words
-	if (GPIO.input(red_pin) == GPIO.LOW):
-		counter = 0
+	global red_state
+	global green_state
+	global white_state
+
+	if (red_state == GPIO.LOW):
 		while (GPIO.input(red_pin) == GPIO.LOW):
 			time.sleep(0.01)
-			counter+=1
-			print counter
-		print "Button Pressed."
-		if counter<200:
-			print "entreif"
-			current_char=char_dif(current_char,1)
-			for i in range(len(letters)):
-				w.itemconfig(letters[i],text=chr(char_dif(current_char,i-2)))		
-		else:
-			print "entrelese"
-			words+=" "
-			w.itemconfig(words_display,text=words)		
+	else:
+		if (GPIO.input(red_pin) == GPIO.LOW):
+			counter = 0
+			while (GPIO.input(red_pin) == GPIO.LOW and counter<200):
+				time.sleep(0.01)
+				counter+=1
+				print counter
+			print "Button Pressed."
+			if counter<200:
+				print "entreif"
+				current_char=char_dif(current_char,1)
+				for i in range(len(letters)):
+					w.itemconfig(letters[i],text=chr(char_dif(current_char,i-2)))		
+			else:
+				print "entrelese"
+				words+=" "
+				w.itemconfig(words_display,text=words)		
 
- 
-	if (GPIO.input(white_pin) == GPIO.LOW):
-		counter = 0
+	if (white_state == GPIO.LOW): 
 		while (GPIO.input(white_pin) == GPIO.LOW):
 			time.sleep(0.01)
-			counter+=1
-		if counter<300:
-			words+=chr(current_char)
-			w.itemconfig(words_display,text=words)		
-		else:
-			words=""
-			w.itemconfig(words_display,text=words)		
-	if (GPIO.input(green_pin) == GPIO.LOW):
-		counter = 0
+	else:
+		if (GPIO.input(white_pin) == GPIO.LOW):
+			counter = 0
+			while (GPIO.input(white_pin) == GPIO.LOW and counter<200):
+				time.sleep(0.01)
+				counter+=1
+			if counter<200:
+				words+=chr(current_char)
+				w.itemconfig(words_display,text=words)		
+			else:
+				words=""
+				w.itemconfig(words_display,text=words)		
+	if (green_state == GPIO.LOW):
 		while (GPIO.input(green_pin) == GPIO.LOW):
 			time.sleep(0.01)
-			counter+=1
-		if counter<300:
-			current_char=char_dif(current_char,-1)
-			for i in range(len(letters)):
-				w.itemconfig(letters[i],text=chr(char_dif(current_char,i-2)))		
-		else:
-			words=words[0:-1]
-			w.itemconfig(words_display,text=words)		
+	else:
+		if (GPIO.input(green_pin) == GPIO.LOW):
+			counter = 0
+			while (GPIO.input(green_pin) == GPIO.LOW and counter<200):
+				time.sleep(0.01)
+				counter+=1
+			if counter<200:
+				current_char=char_dif(current_char,-1)
+				for i in range(len(letters)):
+					w.itemconfig(letters[i],text=chr(char_dif(current_char,i-2)))		
+			else:
+				words=words[0:-1]
+				w.itemconfig(words_display,text=words)		
+	white_state = GPIO.input(white_pin)
+	green_state = GPIO.input(green_pin)
+	red_state = GPIO.input(red_pin)
+
+	if (GPIO.input(off_pin) == GPIO.HIGH):
+		os.system("sudo shutdown -h now")
+
 	master.after(10,check_button)
 
 master = Tk()
